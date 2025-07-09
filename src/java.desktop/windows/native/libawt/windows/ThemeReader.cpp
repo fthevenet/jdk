@@ -400,6 +400,7 @@ JNIEXPORT void JNICALL Java_sun_awt_windows_ThemeReader_paintBackground
     HDC memDC,defaultDC;
     HBITMAP hDibSection = NULL;
     RECT rect;
+    RECT clipRect;
     BITMAPINFO bmi;
     HTHEME hTheme = (HTHEME) theme;
 
@@ -448,9 +449,15 @@ JNIEXPORT void JNICALL Java_sun_awt_windows_ThemeReader_paintBackground
         rect.bottom = h;
         rect.right = w;
     }
+
+    clipRect.left = 0;
+    clipRect.top = 0;
+    clipRect.bottom = h;
+    clipRect.right = w;
+
     ZeroMemory(pSrcBits,(BITS_PER_PIXEL>>3)*w*h);
 
-    HRESULT hres = DrawThemeBackgroundFunc(hTheme, memDC, part, state, &rect, NULL);
+    HRESULT hres = DrawThemeBackgroundFunc(hTheme, memDC, part, state, &rect, &clipRect);
     assert_result(hres, env);
     if (SUCCEEDED(hres)) {
         // Make sure GDI is done.
