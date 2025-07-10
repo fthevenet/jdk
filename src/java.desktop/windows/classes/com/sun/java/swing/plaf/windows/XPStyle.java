@@ -721,8 +721,7 @@ final class XPStyle {
             // since we modify the data in it.
             ThemeReader.paintBackground(SunWritableRaster.stealData(dbi, 0),
                                         part.getControlName(c), part.getValue(),
-                                        State.getValue(part, state),
-                                        0, 0, w, h, w, dpi);
+                                        State.getValue(part, state), w, h, dpi);
 
             SunWritableRaster.markDirty(dbi);
         }

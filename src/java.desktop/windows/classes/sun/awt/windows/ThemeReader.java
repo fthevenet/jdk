@@ -181,21 +181,24 @@ public final class ThemeReader {
     private static native void paintBackground(int[] buffer, long theme,
                                                int part, int state,
                                                int rectRight, int rectBottom,
-                                               int w, int h, int stride);
+                                               int x, int y, int w, int h);
 
     public static void paintBackground(int[] buffer, String widget,
-           int part, int state, int x, int y, int w, int h, int stride, int dpi) {
+           int part, int state, int w, int h, int dpi) {
         readLock.lock();
         try {
             /* For widgets and parts in the lists, we get the part size
             for the current screen DPI to scale them better. */
             Dimension d = (partSizeWidgets.contains(widget)
-                          && partSizeWidgetParts.contains(Integer.valueOf(part)))
-                          ? getPartSize(getTheme(widget, dpi), part, state)
-                          : new Dimension(w, h);
+                    && partSizeWidgetParts.contains(part))
+                    ? getPartSize(getTheme(widget, dpi), part, state)
+                    : new Dimension(w, h);
+            // calculate the x and y offsets to center the part if it is
+            // smaller than the target dimensions
+            int y = Math.max(0, (h - d.height) / 2);
+            int x = Math.max(0, (w - d.width) / 2);
 
-            paintBackground(buffer, getTheme(widget, dpi), part, state,
-                            d.width, d.height, w, h, stride);
+            paintBackground(buffer, getTheme(widget, dpi), part, state, d.width, d.height, x, y, w, h);
         } finally {
             readLock.unlock();
         }
@@ -303,7 +306,7 @@ public final class ThemeReader {
                                         int property) {
         readLock.lock();
         try {
-            return getPosition(getTheme(widget, defaultDPI), part,state,property);
+            return getPosition(getTheme(widget, defaultDPI), part, state, property);
         } finally {
             readLock.unlock();
         }
@@ -328,30 +331,30 @@ public final class ThemeReader {
     private static native void setWindowTheme(String subAppName);
 
     private static native long getThemeTransitionDuration(long theme, int part,
-                                        int stateFrom, int stateTo, int propId);
+                                                          int stateFrom, int stateTo, int propId);
 
     public static long getThemeTransitionDuration(String widget, int part,
-                                       int stateFrom, int stateTo, int propId) {
+                                                  int stateFrom, int stateTo, int propId) {
         readLock.lock();
         try {
             return getThemeTransitionDuration(getTheme(widget, defaultDPI),
-                                              part, stateFrom, stateTo,
-                                              propId);
+                    part, stateFrom, stateTo,
+                    propId);
         } finally {
             readLock.unlock();
         }
     }
 
     private static native Insets getThemeBackgroundContentMargins(long theme,
-                     int part, int state, int boundingWidth, int boundingHeight);
+                                                                  int part, int state, int boundingWidth, int boundingHeight);
 
     public static Insets getThemeBackgroundContentMargins(String widget,
-                    int part, int state, int boundingWidth, int boundingHeight) {
+                                                          int part, int state, int boundingWidth, int boundingHeight) {
         readLock.lock();
         try {
             return getThemeBackgroundContentMargins(getTheme(widget, defaultDPI),
-                                                    part, state,
-                                                    boundingWidth, boundingHeight);
+                    part, state,
+                    boundingWidth, boundingHeight);
         } finally {
             readLock.unlock();
         }

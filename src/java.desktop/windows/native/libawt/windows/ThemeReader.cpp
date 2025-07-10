@@ -298,7 +298,7 @@ JNIEXPORT void JNICALL Java_sun_awt_windows_ThemeReader_closeTheme
 }
 
 static void copyDIBToBufferedImage(int *pDstBits, int *pSrcBits,
-                BOOL transparent, int w, int h, int stride) {
+                BOOL transparent, int x, int y, int w, int h, int stride) {
 
     int offsetToNextLine = stride - w;
     int *dst = pDstBits;
@@ -322,65 +322,59 @@ static void copyDIBToBufferedImage(int *pDstBits, int *pSrcBits,
     }
     src = pSrcBits;
 
+    int offset = (y * w) + x;
+    dst += offset;
+
     if (translucent) {
-        for (int i=0;i<h;i++) {
-            for (int j=0;j<w;j++) {
-                pixel = *src++;
-                if (pixel != 0) {
-                    // The UxTheme API seems to do the blending and
-                    // premultiply the resulting values.
-                    // so we have to divide by the alpha to get the
-                    // original component values.
-                    a = (pixel & ALPHA_MASK)  >> ALPHA_SHIFT;
-                    if ((a != 255) && (a != 0)) {
-                        r = (pixel & RED_MASK)  >> RED_SHIFT;
-                        g = (pixel & GREEN_MASK)  >> GREEN_SHIFT;
-                        b = (pixel & BLUE_MASK);
-                        alphaScale = 255.0 / a;
-                        r = (int) ((double) r * alphaScale);
-                        if (r > 255) r = 255;
-                        g = (int) ((double) g * alphaScale);
-                        if (g > 255) g = 255;
-                        b = (int) ((double) b * alphaScale);
-                        if (b > 255) b = 255;
-                        pixel = (a << ALPHA_SHIFT) | (r << RED_SHIFT) |
-                                                   (g << GREEN_SHIFT) | b ;
-                    }
-                    else {
-                        // Frame maximize and minimize buttons
-                        // have transparent pixels with alpha
-                        // set to FF and nontransparent pixels have zero alpha.
-                        pixel |= 0xFF000000;
-                    }
+        for (int i=0;i<(h * w) - offset;i++) {
+            pixel = *src++;
+            if (pixel != 0) {
+                // The UxTheme API seems to do the blending and
+                // premultiply the resulting values.
+                // so we have to divide by the alpha to get the
+                // original component values.
+                a = (pixel & ALPHA_MASK)  >> ALPHA_SHIFT;
+                if ((a != 255) && (a != 0)) {
+                    r = (pixel & RED_MASK)  >> RED_SHIFT;
+                    g = (pixel & GREEN_MASK)  >> GREEN_SHIFT;
+                    b = (pixel & BLUE_MASK);
+                    alphaScale = 255.0 / a;
+                    r = (int) ((double) r * alphaScale);
+                    if (r > 255) r = 255;
+                    g = (int) ((double) g * alphaScale);
+                    if (g > 255) g = 255;
+                    b = (int) ((double) b * alphaScale);
+                    if (b > 255) b = 255;
+                    pixel = (a << ALPHA_SHIFT) | (r << RED_SHIFT) |
+                                               (g << GREEN_SHIFT) | b ;
                 }
-                *dst++ = pixel;
+                else {
+                    // Frame maximize and minimize buttons
+                    // have transparent pixels with alpha
+                    // set to FF and nontransparent pixels have zero alpha.
+                    pixel |= 0xFF000000;
+                }
             }
-            dst += offsetToNextLine;
+            *dst++ = pixel;
         }
     }
     else if (transparent) {
-         for (int i=0;i<h;i++) {
-             for (int j=0;j<w;j++) {
-                 pixel = *src++;
-                 if (pixel == 0) {
-                     *dst++ = 0;
-                 }
-                 else {
-                     *dst++ = 0xFF000000 | pixel;
-                 }
-             }
-             dst += offsetToNextLine;
-         }
-     }
-     else {
-         for (int i=0;i<h;i++) {
-             for (int j=0;j<w;j++) {
-                 pixel = *src++;
-                 *dst++ = 0xFF000000 | pixel;
-             }
-             dst += offsetToNextLine;
-         }
-     }
+        for (int i=0;i<(h * w) - offset;i++) {
+            pixel = *src++;
+            if (pixel == 0) {
+                *dst++ = 0;
+            }
+            else {
+                *dst++ = 0xFF000000 | pixel;
+            }
+        }
+    }
+    else {
+        for (int i=0;i<(h * w) - offset;i++) {
+            pixel = *src++;
+            *dst++ = 0xFF000000 | pixel;
+        }
+    }
 
 }
 
@@ -389,11 +383,11 @@ static void copyDIBToBufferedImage(int *pDstBits, int *pSrcBits,
 /*
  * Class:     sun_awt_windows_ThemeReader
  * Method:    paintBackground
- * Signature: ([IJIIIIIII)V
+ * Signature: ([IJIIIIIIIII)V
  */
 JNIEXPORT void JNICALL Java_sun_awt_windows_ThemeReader_paintBackground
   (JNIEnv *env, jclass klass, jintArray array, jlong theme, jint part, jint state,
-    jint rectRight, jint rectBottom, jint w, jint h, jint stride) {
+    jint rectRight, jint rectBottom, jint x, jint y, jint w, jint h, jint stride) {
 
     int *pDstBits=NULL;
     int *pSrcBits=NULL;
@@ -466,7 +460,7 @@ JNIEXPORT void JNICALL Java_sun_awt_windows_ThemeReader_paintBackground
         pDstBits = (int *)env->GetPrimitiveArrayCritical(array, 0);
         if (pDstBits != NULL) {
             BOOL transparent = IsThemeBackgroundPartiallyTransparentFunc(hTheme, part, state);
-            copyDIBToBufferedImage(pDstBits, pSrcBits, transparent, w, h, stride);
+            copyDIBToBufferedImage(pDstBits, pSrcBits, transparent,x, y, w, h, stride);
             env->ReleasePrimitiveArrayCritical(array, pDstBits, 0);
         }
     }
@@ -707,7 +701,7 @@ JNIEXPORT jobject JNICALL Java_sun_awt_windows_ThemeReader_getPoint
         jobject pointObj = env->NewObject(pointClassID, pointMID, point.x, point.y);
 
         if (safe_ExceptionOccurred(env)) {
-            env->ExceptionDescribe();
+            env-> ExceptionDescribe();
             env->ExceptionClear();
         }
 
