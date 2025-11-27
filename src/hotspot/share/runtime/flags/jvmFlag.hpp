@@ -313,7 +313,7 @@ public:
   static void printSetFlags(outputStream* out);
 
   // printRanges will print out flags type, name and range values as expected by -XX:+PrintFlagsRanges
-  static void printFlags(outputStream* out, bool withComments, bool printRanges = false, bool skipDefaults = false);
+  static void printFlags(outputStream* out, bool withComments, bool printRanges = false, bool skipDefaults = false, bool alwaysPrintLocked = false);
   static void printError(bool verbose, const char* msg, ...) ATTRIBUTE_PRINTF(2, 3);
 
   static void verify() PRODUCT_RETURN;

@@ -685,7 +685,7 @@ void JVMFlag::check_all_flag_declarations() {
 
 #endif // ASSERT
 
-void JVMFlag::printFlags(outputStream* out, bool withComments, bool printRanges, bool skipDefaults) {
+void JVMFlag::printFlags(outputStream* out, bool withComments, bool printRanges, bool skipDefaults, bool alwaysPrintLocked) {
   // Print the flags sorted by name
   // Note: This method may be called before the thread structure is in place
   //       which means resource allocation cannot be used. Also, it may be
@@ -711,7 +711,8 @@ void JVMFlag::printFlags(outputStream* out, bool withComments, bool printRanges,
     for (size_t i = 0; i < length; i++) {
       const bool skip = (skipDefaults && flagTable[i].is_default());
       const bool visited = iteratorMarkers.at(i);
-      if (!visited && flagTable[i].is_unlocked() && !skip) {
+      const bool printLocked = alwaysPrintLocked || flagTable[i].is_unlocked();
+      if (!visited && printLocked && !skip) {
         if ((bestFlag == nullptr) || (strcmp(bestFlag->name(), flagTable[i].name()) > 0)) {
           bestFlag = &flagTable[i];
           bestFlagIndex = i;
