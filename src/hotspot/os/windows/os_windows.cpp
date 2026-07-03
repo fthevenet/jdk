@@ -958,6 +958,7 @@ size_t os::rss() {
   return rss;
 }
 
+size_t os::rss_slow() { return rss(); }
 
 int os::active_processor_count() {
   // User has overridden the number of active processors

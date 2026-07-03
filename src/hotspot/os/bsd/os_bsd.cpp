@@ -266,6 +266,8 @@ size_t os::rss() {
   return rss;
 }
 
+size_t os::rss_slow() { return rss(); }
+
 // Cpu architecture string
 #if   defined(ZERO)
 static char cpu_arch[] = ZERO_LIBARCH;

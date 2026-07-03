@@ -343,6 +343,9 @@ class os: AllStatic {
   static physical_memory_size_type physical_memory();
   static bool is_server_class_machine();
   static size_t rss();
+  // Provides a slower but more accurate way of measuring rss values on some platforms
+  // (falls back to os::rss() on platforms that do not provide an alternate way to measure rss).
+  static size_t rss_slow();
 
   // On platforms with container support (currently only Linux) we combine machine values with
   // potential container values in os:: methods, abstracting which value is actually used.

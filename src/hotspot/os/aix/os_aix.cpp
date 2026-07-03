@@ -306,6 +306,8 @@ physical_memory_size_type os::Machine::physical_memory() {
 
 size_t os::rss() { return (size_t)0; }
 
+size_t os::rss_slow() { return rss(); }
+
 // Cpu architecture string
 #if defined(PPC32)
 static char cpu_arch[] = "ppc";

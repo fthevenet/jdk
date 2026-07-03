@@ -2780,6 +2780,10 @@ WB_ENTRY(jlong, WB_Rss(JNIEnv* env, jobject o))
   return os::rss();
 WB_END
 
+WB_ENTRY(jlong, WB_RssSlow(JNIEnv* env, jobject o))
+  return os::rss_slow();
+WB_END
+
 WB_ENTRY(void, WB_ControlledCrash(JNIEnv* env, jobject o, jint how))
 #ifdef ASSERT
   VMError::controlled_crash(how);
@@ -3079,6 +3083,7 @@ static JNINativeMethod methods[] = {
   {CC"preTouchMemory",  CC"(JJ)V",                    (void*)&WB_PreTouchMemory},
   {CC"cleanMetaspaces", CC"()V",                      (void*)&WB_CleanMetaspaces},
   {CC"rss", CC"()J",                                  (void*)&WB_Rss},
+  {CC"rssSlow", CC"()J",                              (void*)&WB_RssSlow},
   {CC"printString", CC"(Ljava/lang/String;I)Ljava/lang/String;", (void*)&WB_PrintString},
   {CC"lockAndStuckInSafepoint", CC"()V",              (void*)&WB_TakeLockAndHangInSafepoint},
   {CC"getMinimumJavaStackSize", CC"()J",              (void*)&WB_GetMinimumJavaStackSize},

@@ -148,7 +148,7 @@ public class TestAlwaysPreTouchBehavior {
 
         // RSS values we get are sometimes somewhat delayed or inaccurate
         for (int iter=0; iter < maxIter; iter++) {
-            long rss = WhiteBox.getWhiteBox().rss();
+            long rss = WhiteBox.getWhiteBox().rssSlow();
             System.out.println("RSS: " + rss);
             long available = WhiteBox.getWhiteBox().hostAvailableMemory();
             System.out.println("Host available memory: " + available);
