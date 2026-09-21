@@ -30,7 +30,7 @@
  * @requires vm.cds
  * @requires vm.cds.default.archive.available
  * @requires vm.cds.nocoh.archive.available
- * @requires (os.family != "windows") & (os.family != "aix")
+ * @requires os.family != "aix"
  * @library /test/lib
  * @modules java.base/jdk.internal.misc
  *          java.management
@@ -48,10 +48,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class CompressedCPUSpecificClassSpaceReservation {
-    // Note: windows: On windows, we currently have the issue that os::reserve_memory_aligned relies on
-    // os::attempt_reserve_memory_at because VirtualAlloc cannot be unmapped in parts; this precludes use of
-    // +SimulateFullAddressSpace (VM won't be able to reserve heap). Therefore we exclude the test for windows
-    // for now.
 
     private static void do_test(boolean CDS, boolean COH) throws IOException {
         // We start the VM with -XX:+SimulateFullAdressSpace, which means the JVM will go through all motions
