@@ -285,7 +285,7 @@ class MacroAssembler: public Assembler {
 
   // Load a narrow ptr constant (oop or klass ptr).
   void load_narrow_oop( Register t, narrowOop a);
-  void load_narrow_klass(Register t, Klass* k);
+  void load_narrow_klass_const(Register t, Klass* k);
 
   static bool is_load_const_32to64(address pos);
   static bool is_load_narrow_oop(address pos)   { return is_load_const_32to64(pos); }
@@ -862,6 +862,7 @@ class MacroAssembler: public Assembler {
   void decode_klass_not_null(Register dst, Register src);
   void decode_klass_not_null(Register dst);
   void load_klass(Register klass, Address mem);
+  void load_narrow_klass(Register klass, Register src_oop);
   void load_klass(Register klass, Register src_oop);
   void store_klass(Register klass, Register dst_oop, Register ck = noreg); // Klass will get compressed if ck not provided.
   void store_klass_gap(Register s, Register dst_oop);

@@ -1246,7 +1246,7 @@ void MacroAssembler::load_narrow_oop(Register t, narrowOop a) {
 }
 
 // Load narrow klass constant, compression required.
-void MacroAssembler::load_narrow_klass(Register t, Klass* k) {
+void MacroAssembler::load_narrow_klass_const(Register t, Klass* k) {
   narrowKlass encoded_k = CompressedKlassPointers::encode(k);
   load_const_32to64(t, encoded_k, false /*sign_extend*/);
 }
@@ -4218,14 +4218,17 @@ void MacroAssembler::cmp_klasses_from_objects(Register obj1, Register obj2, Regi
   BLOCK_COMMENT("} cmp_klasses_from_objects");
 }
 
-void MacroAssembler::load_klass(Register klass, Register src_oop) {
+void MacroAssembler::load_narrow_klass(Register klass, Register src_oop) {
   if (UseCompactObjectHeaders) {
     load_narrow_klass_compact(klass, src_oop);
-    decode_klass_not_null(klass);
   } else {
     z_llgf(klass, oopDesc::klass_offset_in_bytes(), src_oop);
-    decode_klass_not_null(klass);
   }
+}
+
+void MacroAssembler::load_klass(Register klass, Register src_oop) {
+  load_narrow_klass(klass, src_oop);
+  decode_klass_not_null(klass);
 }
 
 void MacroAssembler::load_metadata(Register dst, Register src) {

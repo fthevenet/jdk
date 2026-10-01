@@ -1324,7 +1324,7 @@ int MacroAssembler::ic_check(int end_alignment) {
     if (use_trap_based_null_check) {
       trap_null_check(receiver);
     }
-    load_klass_no_decode(tmp1, receiver); // 2 instructions with UseCompactObjectHeaders
+    load_narrow_klass(tmp1, receiver); // 2 instructions with UseCompactObjectHeaders
     ld(tmp2, in_bytes(CompiledICData::speculated_klass_offset()), data);
     trap_ic_miss_check(tmp1, tmp2);
 
@@ -1340,7 +1340,7 @@ int MacroAssembler::ic_check(int end_alignment) {
       cmpdi(CR0, receiver, 0);
       beqctr(CR0);
     }
-    load_klass_no_decode(tmp1, receiver); // 2 instructions with UseCompactObjectHeaders
+    load_narrow_klass(tmp1, receiver); // 2 instructions with UseCompactObjectHeaders
     ld(tmp2, in_bytes(CompiledICData::speculated_klass_offset()), data);
     cmpd(CR0, tmp1, tmp2);
     bnectr(CR0);
@@ -3218,7 +3218,7 @@ void MacroAssembler::decode_klass_not_null(Register dst, Register src) {
   }
 }
 
-void MacroAssembler::load_klass_no_decode(Register dst, Register src) {
+void MacroAssembler::load_narrow_klass(Register dst, Register src) {
   if (UseCompactObjectHeaders) {
     load_narrow_klass_compact(dst, src);
   } else {
@@ -3227,7 +3227,7 @@ void MacroAssembler::load_klass_no_decode(Register dst, Register src) {
 }
 
 void MacroAssembler::load_klass(Register dst, Register src) {
-  load_klass_no_decode(dst, src);
+  load_narrow_klass(dst, src);
   decode_klass_not_null(dst);
 }
 

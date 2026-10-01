@@ -4898,7 +4898,7 @@ instruct loadConNKlass(iRegN dst, immNKlass src) %{
   ins_encode %{
     AddressLiteral NKlass = __ constant_metadata_address((Metadata*)$src$$constant);
     __ relocate(NKlass.rspec(), 1);
-    __ load_narrow_klass($dst$$Register, (Klass*)NKlass.value());
+    __ load_narrow_klass_const($dst$$Register, (Klass*)NKlass.value());
   %}
   ins_pipe(pipe_class_dummy);
 %}
