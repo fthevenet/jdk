@@ -122,10 +122,6 @@ public class VMProps implements Callable<Map<String, String>> {
         map.put("vm.cds.nocoops.archive.available", this::vmCDSNocoopsArchiveAvailable);
         map.put("vm.cds.nocoh.archive.available", this::vmCDSNocohArchiveAvailable);
         map.put("vm.cds.nocoh.nocoops.archive.available", this::vmCDSNocoopsNocohArchiveAvailable);
-        map.put("vm.cds.default.preview.archive.available", this::vmCDSDefaultPreviewArchiveAvailable);
-        map.put("vm.cds.nocoops.preview.archive.available", this::vmCDSNocoopsPreviewArchiveAvailable);
-        map.put("vm.cds.nocoh.preview.archive.available", this::vmCDSNocohPreviewArchiveAvailable);
-        map.put("vm.cds.nocoh.nocoops.preview.archive.available", this::vmCDSNocoopsNocohPreviewArchiveAvailable);
         map.put("vm.cds.custom.loaders", this::vmCDSForCustomLoaders);
         map.put("vm.cds.supports.aot.class.linking", this::vmCDSSupportsAOTClassLinking);
         map.put("vm.cds.supports.aot.code.caching", this::vmCDSSupportsAOTCodeCaching);
@@ -433,6 +429,9 @@ public class VMProps implements Callable<Map<String, String>> {
     private Path archivePath(EnumSet<CDSFeatures> features) {
         String archiveSubdir = (Platform.isWindows() ? "bin" : "lib");
         StringBuilder archiveName = new StringBuilder("classes");
+        if (PreviewFeatures.isEnabled()) {
+            features.add(CDSFeatures.PREVIEW);
+        }
         features.forEach(f -> archiveName.append(f.label));
         archiveName.append(".jsa");
         return Paths.get(System.getProperty("java.home"), archiveSubdir, "server", archiveName.toString());
@@ -477,50 +476,6 @@ public class VMProps implements Callable<Map<String, String>> {
      */
     protected String vmCDSNocoopsNocohArchiveAvailable() {
         return "" + (isCDSSupported() && archivePathExists(EnumSet.of(CDSFeatures.NOCOOPS, CDSFeatures.NOCOH)));
-    }
-
-    /**
-     * Check for existence of CDS archive with preview enabled.
-     *
-     * @return "true" if CDS required archive file exists in the JDK to be tested.
-     */
-    protected String vmCDSDefaultPreviewArchiveAvailable() {
-        return "" + (isCDSSupported() &&
-                PreviewFeatures.isEnabled() &&
-                archivePathExists(EnumSet.of(CDSFeatures.PREVIEW)));
-    }
-
-    /**
-     * Check for existence of CDS archive with no compressed oops and preview enabled.
-     *
-     * @return "true" if CDS required archive file exists in the JDK to be tested.
-     */
-    protected String vmCDSNocoopsPreviewArchiveAvailable() {
-        return "" + (isCDSSupported() &&
-                PreviewFeatures.isEnabled() &&
-                archivePathExists(EnumSet.of(CDSFeatures.NOCOOPS, CDSFeatures.PREVIEW)));
-    }
-
-    /**
-     * Check for existence of CDS archive with no compact object headers and preview enabled.
-     *
-     * @return "true" if CDS archive classes_preview.jsa exists in the JDK to be tested.
-     */
-    protected String vmCDSNocohPreviewArchiveAvailable() {
-        return "" + (isCDSSupported() &&
-                PreviewFeatures.isEnabled() &&
-                archivePathExists(EnumSet.of(CDSFeatures.NOCOH, CDSFeatures.PREVIEW)));
-    }
-
-    /**
-     * Check for existence of CDS archive with no compressed oops, no compact object headers and preview enabled.
-     *
-     * @return "true" if CDS required archive file exists in the JDK to be tested.
-     */
-    protected String vmCDSNocoopsNocohPreviewArchiveAvailable() {
-        return "" + (isCDSSupported() &&
-                PreviewFeatures.isEnabled() &&
-                archivePathExists(EnumSet.of(CDSFeatures.NOCOOPS, CDSFeatures.NOCOH, CDSFeatures.PREVIEW)));
     }
 
     /**
