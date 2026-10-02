@@ -36,6 +36,7 @@ import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -120,6 +121,11 @@ public class VMProps implements Callable<Map<String, String>> {
         map.put("vm.cds.default.archive.available", this::vmCDSDefaultArchiveAvailable);
         map.put("vm.cds.nocoops.archive.available", this::vmCDSNocoopsArchiveAvailable);
         map.put("vm.cds.nocoh.archive.available", this::vmCDSNocohArchiveAvailable);
+        map.put("vm.cds.nocoh.nocoops.archive.available", this::vmCDSNocoopsNocohArchiveAvailable);
+        map.put("vm.cds.default.preview.archive.available", this::vmCDSDefaultPreviewArchiveAvailable);
+        map.put("vm.cds.nocoops.preview.archive.available", this::vmCDSNocoopsPreviewArchiveAvailable);
+        map.put("vm.cds.nocoh.preview.archive.available", this::vmCDSNocohPreviewArchiveAvailable);
+        map.put("vm.cds.nocoh.nocoops.preview.archive.available", this::vmCDSNocoopsNocohPreviewArchiveAvailable);
         map.put("vm.cds.custom.loaders", this::vmCDSForCustomLoaders);
         map.put("vm.cds.supports.aot.class.linking", this::vmCDSSupportsAOTClassLinking);
         map.put("vm.cds.supports.aot.code.caching", this::vmCDSSupportsAOTCodeCaching);
@@ -389,56 +395,132 @@ public class VMProps implements Callable<Map<String, String>> {
         return "" + WB.isDTraceIncluded();
     }
 
-    /**
-     * Check for CDS support.
-     *
-     * @return true if CDS is supported by the VM to be tested.
-     */
-    protected String vmCDS() {
+    // Check if the VM supports CDS.
+    private boolean isCDSSupported(){
         boolean noJvmtiAdded = allFlags()
                 .filter(s -> s.startsWith("-agentpath"))
                 .findAny()
                 .isEmpty();
 
-        return "" + (noJvmtiAdded && WB.isCDSIncluded());
+        return noJvmtiAdded && WB.isCDSIncluded();
     }
 
-    // Returns a platform-aware path for the specified archive file.
-    private Path archivePath(String archiveName) {
+    /**
+     * Check for CDS support.
+     *
+     * @return "true" if CDS is supported by the VM to be tested.
+     */
+    protected String vmCDS() {
+       return "" + isCDSSupported();
+    }
+
+    private enum CDSFeatures {
+        // The order of the features below is important for properly crafting archive file names.
+        DEFAULT(""),
+        NOCOOPS("_nocoops"),
+        NOCOH("_nocoh"),
+        PREVIEW("_preview");
+
+        private final String label;
+
+        CDSFeatures(String label) {
+            this.label = label;
+        }
+
+    }
+
+    // Craft a platform-aware path for a CDS archive file with the specified features.
+    private Path archivePath(EnumSet<CDSFeatures> features) {
         String archiveSubdir = (Platform.isWindows() ? "bin" : "lib");
-        return Paths.get(System.getProperty("java.home"), archiveSubdir, "server", archiveName);
+        StringBuilder archiveName = new StringBuilder("classes");
+        features.forEach(f -> archiveName.append(f.label));
+        archiveName.append(".jsa");
+        return Paths.get(System.getProperty("java.home"), archiveSubdir, "server", archiveName.toString());
     }
 
-    // Returns true if a CDS archive file with specified name exists.
-    private boolean archivePathExists(String archiveName) {
-        return  Files.exists(archivePath(archiveName));
+    // Check if a CDS archive file for the specified features exists.
+    private boolean archivePathExists(EnumSet<CDSFeatures> features) {
+        return Files.exists(archivePath(features));
     }
 
     /**
      * Check for CDS default archive existence.
      *
-     * @return true if CDS default archive classes.jsa exists in the JDK to be tested.
+     * @return "true" if CDS default archive classes.jsa exists in the JDK to be tested.
      */
     protected String vmCDSDefaultArchiveAvailable() {
-        return "" + ("true".equals(vmCDS()) && archivePathExists("classes.jsa"));
+        return "" + (isCDSSupported() && archivePathExists(EnumSet.of(CDSFeatures.DEFAULT)));
     }
 
     /**
      * Check for CDS no compressed oops archive existence.
      *
-     * @return true if CDS archive classes_nocoops.jsa exists in the JDK to be tested.
+     * @return "true" if CDS archive classes_nocoops.jsa exists in the JDK to be tested.
      */
     protected String vmCDSNocoopsArchiveAvailable() {
-        return "" + ("true".equals(vmCDS()) && archivePathExists("classes_nocoops.jsa"));
+        return "" + (isCDSSupported() && archivePathExists(EnumSet.of(CDSFeatures.NOCOOPS)));
     }
 
     /**
      * Check for CDS no compact object headers archive existence.
      *
-     * @return true if CDS archive classes_nocoh.jsa exists in the JDK to be tested.
+     * @return "true" if CDS archive classes_nocoh.jsa exists in the JDK to be tested.
      */
     protected String vmCDSNocohArchiveAvailable() {
-        return "" + ("true".equals(vmCDS()) && archivePathExists("classes_nocoh.jsa"));
+        return "" + (isCDSSupported() && archivePathExists(EnumSet.of(CDSFeatures.NOCOH)));
+    }
+
+    /**
+     * Check for existence of CDS archive with no compressed oops and no compact object headers enabled.
+     *
+     * @return "true" if CDS archive classes_nocoops_nocoh.jsa exists in the JDK to be tested.
+     */
+    protected String vmCDSNocoopsNocohArchiveAvailable() {
+        return "" + (isCDSSupported() && archivePathExists(EnumSet.of(CDSFeatures.NOCOOPS, CDSFeatures.NOCOH)));
+    }
+
+    /**
+     * Check for existence of CDS archive with preview enabled.
+     *
+     * @return "true" if CDS required archive file exists in the JDK to be tested.
+     */
+    protected String vmCDSDefaultPreviewArchiveAvailable() {
+        return "" + (isCDSSupported() &&
+                PreviewFeatures.isEnabled() &&
+                archivePathExists(EnumSet.of(CDSFeatures.PREVIEW)));
+    }
+
+    /**
+     * Check for existence of CDS archive with no compressed oops and preview enabled.
+     *
+     * @return "true" if CDS required archive file exists in the JDK to be tested.
+     */
+    protected String vmCDSNocoopsPreviewArchiveAvailable() {
+        return "" + (isCDSSupported() &&
+                PreviewFeatures.isEnabled() &&
+                archivePathExists(EnumSet.of(CDSFeatures.NOCOOPS, CDSFeatures.PREVIEW)));
+    }
+
+    /**
+     * Check for existence of CDS archive with no compact object headers and preview enabled.
+     *
+     * @return "true" if CDS archive classes_preview.jsa exists in the JDK to be tested.
+     */
+    protected String vmCDSNocohPreviewArchiveAvailable() {
+        return "" + (isCDSSupported() &&
+                PreviewFeatures.isEnabled() &&
+                archivePathExists(EnumSet.of(CDSFeatures.NOCOH, CDSFeatures.PREVIEW)));
+    }
+
+    /**
+     * Check for existence of CDS archive with no compressed oops, no compact object headers and preview enabled.
+     *
+     * @return "true" if CDS required archive file exists in the JDK to be tested.
+     */
+    protected String vmCDSNocoopsNocohPreviewArchiveAvailable() {
+        return "" + (isCDSSupported() &&
+                PreviewFeatures.isEnabled() &&
+                archivePathExists(EnumSet.of(CDSFeatures.NOCOOPS, CDSFeatures.NOCOH, CDSFeatures.PREVIEW)));
     }
 
     /**
@@ -447,7 +529,7 @@ public class VMProps implements Callable<Map<String, String>> {
      * @return true if CDS provides support for customer loader in the VM to be tested.
      */
     protected String vmCDSForCustomLoaders() {
-        return "" + ("true".equals(vmCDS()) && Platform.areCustomLoadersSupportedForCDS());
+        return "" + (isCDSSupported() && Platform.areCustomLoadersSupportedForCDS());
     }
 
     /**
@@ -455,7 +537,7 @@ public class VMProps implements Callable<Map<String, String>> {
      *         with the current set of jtreg VM options.
      */
     protected String vmCDSCanWriteArchivedJavaHeap() {
-        return "" + ("true".equals(vmCDS()) && WB.canWriteJavaHeapArchive());
+        return "" + (isCDSSupported() && WB.canWriteJavaHeapArchive());
     }
 
     /**
@@ -463,7 +545,7 @@ public class VMProps implements Callable<Map<String, String>> {
      *         with the current set of jtreg VM options.
      */
     protected String vmCDSCanWriteMappedArchivedJavaHeap() {
-        return "" + ("true".equals(vmCDS()) && WB.canWriteMappedJavaHeapArchive());
+        return "" + (isCDSSupported() && WB.canWriteMappedJavaHeapArchive());
     }
 
     /**
@@ -471,7 +553,7 @@ public class VMProps implements Callable<Map<String, String>> {
      *         with the current set of jtreg VM options.
      */
     protected String vmCDSCanWriteStreamedArchivedJavaHeap() {
-        return "" + ("true".equals(vmCDS()) && WB.canWriteStreamedJavaHeapArchive());
+        return "" + (isCDSSupported() && WB.canWriteStreamedJavaHeapArchive());
     }
 
     /**
